@@ -1,0 +1,26 @@
+services:
+  backup:
+    build: .
+    env_file: .env
+    volumes:
+      - type: bind
+        source: ${GITEA_DATA_PATH}
+        target: /backup/gitea
+        read_only: true
+      - type: bind
+        source: ${JENKINS_HOME_PATH}
+        target: /backup/jenkins
+        read_only: true
+      - type: bind
+        source: ${REGISTRY_DATA_PATH}
+        target: /backup/registry
+        read_only: true
+      - ./scripts:/scripts:ro
+      - ./dumps:/dumps
+    networks:
+      - workflow_net
+    restart: unless-stopped
+
+networks:
+  workflow_net:
+    external: true

@@ -1,0 +1,63 @@
+services:
+  front:
+    image: ${REGISTRY_HOST}/${FRONT_IMAGE}:${IMAGE_TAG}
+    env_file: .env
+    environment:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      - PUBLIC_URL=${PUBLIC_URL}
+    ports:
+      - "${FRONT_PORT}:80"
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - app_dev_net
+
+  api:
+    image: ${REGISTRY_HOST}/${API_IMAGE}:${IMAGE_TAG}
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${API_PORT}:8080"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - app_dev_net
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    restart: unless-stopped
+    networks:
+      - app_dev_net
+
+  pgadmin:
+    image: dpage/pgadmin4:7
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "8083:80"
+    depends_on:
+      - postgres
+    networks:
+      - app_dev_net
+    restart: unless-stopped
+
+networks:
+  app_dev_net:
+    external: true
+
+volumes:
+  postgres_data:

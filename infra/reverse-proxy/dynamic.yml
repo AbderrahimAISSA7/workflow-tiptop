@@ -1,0 +1,10 @@
+http:
+  middlewares:
+    default-auth:
+      basicAuth:
+        users:
+          # user: admin / password: changeMe (généré via htpasswd)
+          - "admin:$$apr1$$qsFfT/.h$$QJbDGWf3QdWKdPTCZ8.sT/"
+
+  routers: {}
+  services: {}

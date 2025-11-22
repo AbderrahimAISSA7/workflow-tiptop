@@ -1,0 +1,81 @@
+pipeline {
+  agent any
+
+  environment {
+    REGISTRY = "registry.wk-archi-f24a-15m-g4-2025.fr"
+    IMAGE_NAME = "tiptop-front"
+    APP_HOST = "deploy@vps-app.example.com"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Install deps') {
+      steps { sh 'npm ci' }
+    }
+
+    stage('Lint & Test') {
+      steps { sh 'npm run lint && npm test -- --watch=false' }
+    }
+
+    stage('Build') {
+      steps { sh 'npm run build' }
+      post { success { archiveArtifacts artifacts: 'dist/**', fingerprint: true } }
+    }
+
+    stage('Docker build & push') {
+      steps {
+        script {
+          docker.withRegistry("https://${REGISTRY}", 'registry-credentials') {
+            def imageTag = determineTag()
+            sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${imageTag} ."
+            sh "docker push ${REGISTRY}/${IMAGE_NAME}:${imageTag}"
+            env.IMAGE_TAG = imageTag
+          }
+        }
+      }
+    }
+
+    stage('Deploy Dev') {
+      when { expression { env.GIT_BRANCH ==~ /(feature\\/.*|develop)/ } }
+      steps { deployTo('dev') }
+    }
+
+    stage('Deploy Préprod') {
+      when { branch 'develop' }
+      steps { deployTo('preprod') }
+    }
+
+    stage('Deploy Prod') {
+      when { branch 'main' }
+      steps {
+        input message: 'Confirmer la mise en production Front ?', ok: 'Déployer'
+        deployTo('prod')
+      }
+    }
+  }
+}
+
+def deployTo(envName) {
+  sshagent(credentials: ['app-server-ssh']) {
+    sh """
+    ssh -o StrictHostKeyChecking=no ${APP_HOST} \\
+      'cd /opt/workflow/furious-ducks-workflow && IMAGE_TAG=${IMAGE_TAG} ./scripts/deploy.sh ${envName} tiptop-front'
+    """
+  }
+}
+
+def determineTag() {
+  if (env.GIT_BRANCH.startsWith('feature/')) {
+    return env.GIT_BRANCH.replaceAll('feature/', 'feature-') + "-${env.BUILD_NUMBER}"
+  }
+  if (env.GIT_BRANCH == 'develop') {
+    return "develop-${env.BUILD_NUMBER}"
+  }
+  if (env.GIT_BRANCH == 'main') {
+    return "prod-${env.BUILD_NUMBER}"
+  }
+  return env.BUILD_NUMBER
+}

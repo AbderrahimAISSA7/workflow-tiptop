@@ -1,0 +1,38 @@
+services:
+  gitea:
+    image: gitea/gitea:1.23
+    env_file: .env
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    volumes:
+      - gitea_data:/data
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`${GITEA_HOST}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+
+  gitea-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: gitea
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
+    volumes:
+      - gitea_db:/var/lib/postgresql/data
+    networks:
+      - workflow_net
+    restart: unless-stopped
+
+networks:
+  workflow_net:
+    external: true
+
+volumes:
+  gitea_data:
+  gitea_db:
