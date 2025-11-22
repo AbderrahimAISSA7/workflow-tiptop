@@ -47,4 +47,4 @@ Chaque sous-dossier possède un README décrivant la configuration attendue et l
 - ✅ Gitflow + environnements multiples Dev/Préprod/Prod + domaines dédiés et sous-domaines par outil.
 - ✅ Documentation opérationnelle prête pour la soutenance.
 
-Adapte les variables (domaines, emails ACME, secrets) avant mise en production.
+Adaptation des variables (domaines, emails ACME, secrets) avant mise en production est obligatoire 
