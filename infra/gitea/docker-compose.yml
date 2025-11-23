@@ -1,4 +1,4 @@
-services:
+﻿services:
   gitea:
     image: gitea/gitea:1.23
     env_file: .env
@@ -6,7 +6,7 @@ services:
       - USER_UID=1000
       - USER_GID=1000
     volumes:
-      - gitea_data:/data
+      - ${GITEA_DATA_PATH:-../data/gitea}:/data
     networks:
       - workflow_net
     restart: unless-stopped
@@ -24,7 +24,7 @@ services:
       POSTGRES_USER: gitea
       POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
     volumes:
-      - gitea_db:/var/lib/postgresql/data
+      - ${GITEA_DB_PATH:-../data/gitea-db}:/var/lib/postgresql/data
     networks:
       - workflow_net
     restart: unless-stopped
@@ -32,7 +32,3 @@ services:
 networks:
   workflow_net:
     external: true
-
-volumes:
-  gitea_data:
-  gitea_db:

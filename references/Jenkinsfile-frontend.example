@@ -1,4 +1,4 @@
-pipeline {
+﻿pipeline {
   agent any
 
   environment {
@@ -30,7 +30,8 @@ pipeline {
         script {
           docker.withRegistry("https://${REGISTRY}", 'registry-credentials') {
             def imageTag = determineTag()
-            sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${imageTag} ."
+            def apiBaseUrl = apiBaseUrlForBranch()
+            sh "docker build --build-arg VITE_API_BASE_URL=${apiBaseUrl} -t ${REGISTRY}/${IMAGE_NAME}:${imageTag} ."
             sh "docker push ${REGISTRY}/${IMAGE_NAME}:${imageTag}"
             env.IMAGE_TAG = imageTag
           }
@@ -78,4 +79,14 @@ def determineTag() {
     return "prod-${env.BUILD_NUMBER}"
   }
   return env.BUILD_NUMBER
+}
+
+def apiBaseUrlForBranch() {
+  if (env.GIT_BRANCH == 'main') {
+    return 'https://api.dsp5-archi-f24a-15m-g4-2025.fr'
+  }
+  if (env.GIT_BRANCH == 'develop') {
+    return 'https://api.preprod.dsp5-archi-f24a-15m-g4-2025.fr'
+  }
+  return 'https://api.dev.dsp5-archi-f24a-15m-g4-2025.fr'
 }

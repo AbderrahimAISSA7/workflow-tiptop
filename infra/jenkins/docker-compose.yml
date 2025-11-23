@@ -1,4 +1,4 @@
-services:
+﻿services:
   jenkins:
     build: .
     env_file: .env
@@ -6,7 +6,7 @@ services:
     ports:
       - "50000:50000" # JNLP agents
     volumes:
-      - jenkins_home:/var/jenkins_home
+      - ${JENKINS_HOME_PATH:-../data/jenkins}:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - workflow_net
@@ -21,6 +21,3 @@ services:
 networks:
   workflow_net:
     external: true
-
-volumes:
-  jenkins_home:

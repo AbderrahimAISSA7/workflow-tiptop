@@ -1,0 +1,18 @@
+# Environment secrets
+.env
+*/.env
+!*.env.example
+!*/*.env.example
+
+# Docker volumes / generated data
+infra/data/
+infra/backups/dumps/
+infra/backups/repo/
+infra/registry/auth/htpasswd
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db

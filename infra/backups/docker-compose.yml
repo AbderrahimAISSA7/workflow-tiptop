@@ -1,4 +1,4 @@
-services:
+﻿services:
   backup:
     build: .
     env_file: .env
@@ -17,6 +17,7 @@ services:
         read_only: true
       - ./scripts:/scripts:ro
       - ./dumps:/dumps
+      - ./repo:/repo
     networks:
       - workflow_net
     restart: unless-stopped

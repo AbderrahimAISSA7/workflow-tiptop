@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
@@ -27,6 +27,11 @@ if [[ -z "${IMAGE_TAG:-}" ]]; then
   exit 1
 fi
 
+available_services=$(docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" config --services)
+service_exists() {
+  grep -q "^$1$" <<<"${available_services}"
+}
+
 TARGET_SERVICES=()
 case "${MODULE}" in
   tiptop-api)
@@ -37,14 +42,17 @@ case "${MODULE}" in
     ;;
   all)
     TARGET_SERVICES+=(front api postgres)
+    if service_exists pgadmin; then
+      TARGET_SERVICES+=(pgadmin)
+    fi
     ;;
   *)
     echo "Module inconnu : ${MODULE} (attendus: tiptop-api, tiptop-front, all)" >&2
     exit 1
     ;;
-esac
+ESAC
 
-echo "[deploy] Environnement=${ENVIRONMENT} Module=${MODULE} Image tag=${IMAGE_TAG}"
+printf '[deploy] env=%s module=%s image=%s\n' "${ENVIRONMENT}" "${MODULE}" "${IMAGE_TAG}"
 
 export IMAGE_TAG
 

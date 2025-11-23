@@ -1,29 +1,35 @@
+﻿version: "3.9"
+
 services:
   front:
     image: ${REGISTRY_HOST}/${FRONT_IMAGE}:${IMAGE_TAG}
-    env_file: .env
+    env_file:
+      - .env
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - PUBLIC_URL=${PUBLIC_URL}
+    depends_on:
+      - api
     ports:
       - "${FRONT_PORT}:80"
     restart: unless-stopped
-    depends_on:
-      - api
     networks:
       - app_dev_net
 
   api:
     image: ${REGISTRY_HOST}/${API_IMAGE}:${IMAGE_TAG}
-    env_file: .env
+    env_file:
+      - .env
     environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      TIPTOP_SECURITY_JWT_SECRET: ${TIPTOP_SECURITY_JWT_SECRET}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "${API_PORT}:8080"
-    depends_on:
-      - postgres
     restart: unless-stopped
     networks:
       - app_dev_net
@@ -34,6 +40,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -43,17 +54,17 @@ services:
       - app_dev_net
 
   pgadmin:
-    image: dpage/pgadmin4:7
+    image: dpage/pgadmin4:8
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-    ports:
-      - "8083:80"
     depends_on:
       - postgres
+    ports:
+      - "${PGADMIN_PORT}:80"
+    restart: unless-stopped
     networks:
       - app_dev_net
-    restart: unless-stopped
 
 networks:
   app_dev_net:

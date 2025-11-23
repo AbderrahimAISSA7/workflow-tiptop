@@ -1,0 +1,63 @@
+﻿services:
+  traefik:
+    extends:
+      file: ./reverse-proxy/docker-compose.yml
+      service: traefik
+
+  jenkins:
+    extends:
+      file: ./jenkins/docker-compose.yml
+      service: jenkins
+
+  gitea:
+    extends:
+      file: ./gitea/docker-compose.yml
+      service: gitea
+
+  gitea-db:
+    extends:
+      file: ./gitea/docker-compose.yml
+      service: gitea-db
+
+  registry:
+    extends:
+      file: ./registry/docker-compose.yml
+      service: registry
+
+  prometheus:
+    extends:
+      file: ./monitoring/docker-compose.yml
+      service: prometheus
+
+  grafana:
+    extends:
+      file: ./monitoring/docker-compose.yml
+      service: grafana
+
+  cadvisor:
+    extends:
+      file: ./monitoring/docker-compose.yml
+      service: cadvisor
+
+  node-exporter:
+    extends:
+      file: ./monitoring/docker-compose.yml
+      service: node-exporter
+
+  backup:
+    extends:
+      file: ./backups/docker-compose.yml
+      service: backup
+
+networks:
+  workflow_net:
+    external: true
+
+volumes:
+  traefik_letsencrypt:
+  jenkins_home:
+  gitea_data:
+  gitea_db:
+  registry_data:
+  prometheus_data:
+  grafana_data:

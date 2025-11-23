@@ -1,4 +1,4 @@
-services:
+﻿services:
   registry:
     image: registry:2
     env_file: .env
@@ -8,7 +8,7 @@ services:
       REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
     volumes:
-      - registry_data:/var/lib/registry
+      - ${REGISTRY_DATA_PATH:-../data/registry}:/var/lib/registry
       - ./auth:/auth
     networks:
       - workflow_net
@@ -23,6 +23,3 @@ services:
 networks:
   workflow_net:
     external: true
-
-volumes:
-  registry_data:
