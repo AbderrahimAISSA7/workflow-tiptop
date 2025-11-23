@@ -4,6 +4,8 @@ services:
     command:
       - "--configFile=/etc/traefik/traefik.yml"
     env_file: .env
+    environment:
+      - DOCKER_API_VERSION=1.44
     ports:
       - "80:80"
       - "443:443"
