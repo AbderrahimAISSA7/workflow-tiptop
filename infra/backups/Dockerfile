@@ -7,6 +7,6 @@ RUN curl -fsSLo /usr/local/bin/supercronic https://github.com/aptible/supercroni
 
 WORKDIR /app
 
-COPY entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh`nRUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
