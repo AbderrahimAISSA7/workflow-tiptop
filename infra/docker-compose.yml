@@ -1,6 +1,16 @@
 version: "3.8"
 
 services:
+  socket-proxy:
+    image: tecnativa/docker-socket-proxy
+    environment:
+      CONTAINERS: 1
+      SERVICES: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - workflow_net
+
   traefik:
     image: traefik:v2.5
     command:
@@ -18,15 +28,18 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     env_file:
       - ./reverse-proxy/.env
+    environment:
+      DOCKER_HOST: tcp://socket-proxy:2375
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
       - traefik_letsencrypt:/letsencrypt
     networks:
       - workflow_net
     restart: unless-stopped
+    depends_on:
+      - socket-proxy
 
   jenkins:
     build:
