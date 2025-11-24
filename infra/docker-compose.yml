@@ -3,6 +3,8 @@
     extends:
       file: ./reverse-proxy/docker-compose.yml
       service: traefik
+    environment:
+      - DOCKER_API_VERSION=1.44
 
   jenkins:
     extends:
