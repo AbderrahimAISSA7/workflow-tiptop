@@ -4,7 +4,8 @@ services:
       file: ./reverse-proxy/docker-compose.yml
       service: traefik
     environment:
-      - DOCKER_API_VERSION=1.44
+      # Définir explicitement la version minimale requise de l'API ou supérieure
+      - **DOCKER_API_VERSION=1.44**
 
   jenkins:
     extends:
