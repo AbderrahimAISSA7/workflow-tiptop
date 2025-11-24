@@ -1,70 +1,190 @@
+version: "3.8"
+
 services:
   traefik:
-    image: traefik:v3.1
+    image: traefik:v2.5
     command:
-      - "--configFile=/etc/traefik/traefik.yml"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls.certresolver=letsencrypt"
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
     env_file:
       - ./reverse-proxy/.env
-    environment:
-      - DOCKER_API_VERSION=1.44
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
-      - "9100:9100"
     volumes:
-      - ./reverse-proxy/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./reverse-proxy/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
       - traefik_letsencrypt:/letsencrypt
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - workflow_net
     restart: unless-stopped
 
   jenkins:
-    extends:
-      file: ./jenkins/docker-compose.yml
-      service: jenkins
+    build:
+      context: ./jenkins
+    env_file:
+      - ./jenkins/.env
+    user: root
+    depends_on:
+      - registry
+    volumes:
+      - ${JENKINS_HOME_PATH:-./data/jenkins}:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jenkins.rule=Host(`${JENKINS_HOST}`)"
+      - "traefik.http.routers.jenkins.entrypoints=websecure"
+      - "traefik.http.routers.jenkins.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
 
   gitea:
-    extends:
-      file: ./gitea/docker-compose.yml
-      service: gitea
+    image: gitea/gitea:1.23
+    env_file:
+      - ./gitea/.env
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+    volumes:
+      - ${GITEA_DATA_PATH:-./data/gitea}:/data
+    depends_on:
+      - gitea-db
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`${GITEA_HOST}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
 
   gitea-db:
-    extends:
-      file: ./gitea/docker-compose.yml
-      service: gitea-db
+    image: postgres:15
+    env_file:
+      - ./gitea/.env
+    environment:
+      POSTGRES_DB: gitea
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
+    volumes:
+      - ${GITEA_DB_PATH:-./data/gitea-db}:/var/lib/postgresql/data
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
   registry:
-    extends:
-      file: ./registry/docker-compose.yml
-      service: registry
+    image: registry:2
+    env_file:
+      - ./registry/.env
+    environment:
+      REGISTRY_HTTP_ADDR: 0.0.0.0:5000
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - ${REGISTRY_DATA_PATH:-./data/registry}:/var/lib/registry
+      - ./registry/auth:/auth
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.registry.rule=Host(`${REGISTRY_HOST}`)"
+      - "traefik.http.routers.registry.entrypoints=websecure"
+      - "traefik.http.routers.registry.tls.certresolver=letsencrypt"
+      - "traefik.http.services.registry.loadbalancer.server.port=5000"
 
   prometheus:
-    extends:
-      file: ./monitoring/docker-compose.yml
-      service: prometheus
+    image: prom/prometheus:v2.53.1
+    env_file:
+      - ./monitoring/.env
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prom.rule=Host(`${PROMETHEUS_HOST}`)"
+      - "traefik.http.routers.prom.entrypoints=websecure"
+      - "traefik.http.routers.prom.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prom.loadbalancer.server.port=9090"
 
   grafana:
-    extends:
-      file: ./monitoring/docker-compose.yml
-      service: grafana
+    image: grafana/grafana:11.1.0
+    env_file:
+      - ./monitoring/.env
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - workflow_net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${GRAFANA_HOST}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   cadvisor:
-    extends:
-      file: ./monitoring/docker-compose.yml
-      service: cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
   node-exporter:
-    extends:
-      file: ./monitoring/docker-compose.yml
-      service: node-exporter
+    image: prom/node-exporter:v1.8.2
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
   backup:
-    extends:
-      file: ./backups/docker-compose.yml
-      service: backup
+    build:
+      context: ./backups
+    env_file:
+      - ./backups/.env
+    volumes:
+      - ./backups/scripts:/scripts:ro
+      - ./backups/dumps:/dumps
+      - ./backups/repo:/repo
+      - ${GITEA_DATA_PATH:-./data/gitea}:/backup/gitea:ro
+      - ${JENKINS_HOME_PATH:-./data/jenkins}:/backup/jenkins:ro
+      - ${REGISTRY_DATA_PATH:-./data/registry}:/backup/registry:ro
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
 networks:
   workflow_net:
@@ -72,9 +192,5 @@ networks:
 
 volumes:
   traefik_letsencrypt:
-  jenkins_home:
-  gitea_data:
-  gitea_db:
-  registry_data:
-  prometheus_data:
   grafana_data:
+  prometheus_data:
