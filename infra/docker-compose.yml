@@ -4,8 +4,8 @@ services:
   nginx:
     image: nginx:1.25-alpine
     volumes:
-      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./infra/nginx/certs:/etc/ssl/nginx
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/ssl/nginx
     ports:
       - "80:80"
       - "443:443"
@@ -21,7 +21,7 @@ services:
     image: jenkins/jenkins:lts-jdk17
     user: root
     volumes:
-      - ./data/jenkins:/var/jenkins_home
+      - ../data/jenkins:/var/jenkins_home
     environment:
       - JENKINS_OPTS=--httpPort=8080
     networks:
@@ -33,7 +33,7 @@ services:
       - USER_UID=1000
       - USER_GID=1000
     volumes:
-      - ./data/gitea:/data
+      - ../data/gitea:/data
     depends_on:
       - gitea-db
     networks:
@@ -46,7 +46,7 @@ services:
       - POSTGRES_USER=gitea
       - POSTGRES_PASSWORD=gitea
     volumes:
-      - ./data/gitea-db:/var/lib/postgresql/data
+      - ../data/gitea-db:/var/lib/postgresql/data
     networks:
       - workflow_net
 
@@ -54,8 +54,8 @@ services:
     image: prom/prometheus:v2.53.1
     command: ["--config.file=/etc/prometheus/prometheus.yml"]
     volumes:
-      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./data/prometheus:/prometheus
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../data/prometheus:/prometheus
     networks:
       - workflow_net
 
@@ -64,8 +64,8 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=Grafana123!
     volumes:
-      - ./data/grafana:/var/lib/grafana
-      - ./infra/monitoring/datasources:/etc/grafana/provisioning/datasources
+      - ../data/grafana:/var/lib/grafana
+      - ./monitoring/datasources:/etc/grafana/provisioning/datasources
     depends_on:
       - prometheus
     networks:
@@ -74,8 +74,8 @@ services:
   backup:
     build: ./backup
     volumes:
-      - ./data:/data:ro
-      - ./backups:/backups
+      - ../data:/data:ro
+      - ../backups:/backups
     networks:
       - workflow_net
 
