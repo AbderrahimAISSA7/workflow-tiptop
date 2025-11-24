@@ -1,11 +1,25 @@
 services:
   traefik:
-    extends:
-      file: ./reverse-proxy/docker-compose.yml
-      service: traefik
+    image: traefik:v3.1
+    command:
+      - "--configFile=/etc/traefik/traefik.yml"
+    env_file:
+      - ./reverse-proxy/.env
     environment:
-      # Définir explicitement la version minimale requise de l'API ou supérieure
-      - **DOCKER_API_VERSION=1.44**
+      - DOCKER_API_VERSION=1.44
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+      - "9100:9100"
+    volumes:
+      - ./reverse-proxy/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./reverse-proxy/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik_letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
   jenkins:
     extends:
