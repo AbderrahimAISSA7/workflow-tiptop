@@ -1,0 +1,19 @@
+﻿# Node / Bun / pnpm
+node_modules/
+.pnpm-store/
+
+# Build outputs
+build/
+dist/
+.vscode/
+
+# Python / logs
+__pycache__/
+*.log
+
+# Docker data
+infra/data/
+backups/
+
+# Certificates
+infra/nginx/certs/
