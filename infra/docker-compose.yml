@@ -72,7 +72,7 @@ services:
       - workflow_net
 
   backup:
-    build: ./infra/backup
+    build: ./backup
     volumes:
       - ./data:/data:ro
       - ./backups:/backups
