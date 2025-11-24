@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 TS=$(date +%Y%m%d-%H%M)
 mkdir -p /backups
