@@ -12,21 +12,22 @@ services:
       - gitea
       - grafana
       - prometheus
+      - registry
     networks:
       - workflow_net
     restart: unless-stopped
 
   jenkins:
-   image: jenkins/jenkins:lts-jdk17
-   user: root
-   volumes:
-     - ../data/jenkins:/var/jenkins_home
-   environment:
-     - JENKINS_OPTS=--httpPort=8080 -Djenkins.install.runSetupWizard=false
-     - JENKINS_SLAVE_AGENT_PORT=50000
-   networks:
-     - workflow_net
-   restart: unless-stopped
+    image: jenkins/jenkins:lts-jdk17
+    user: root
+    volumes:
+      - ../data/jenkins:/var/jenkins_home
+    environment:
+      - JENKINS_OPTS=--httpPort=8080 -Djenkins.install.runSetupWizard=false
+      - JENKINS_SLAVE_AGENT_PORT=50000
+    networks:
+      - workflow_net
+    restart: unless-stopped
 
   gitea:
     image: gitea/gitea:1.23
@@ -49,6 +50,16 @@ services:
       - POSTGRES_PASSWORD=gitea
     volumes:
       - ../data/gitea-db:/var/lib/postgresql/data
+    networks:
+      - workflow_net
+    restart: unless-stopped
+
+  registry:
+    image: registry:2
+    environment:
+      - REGISTRY_HTTP_ADDR=0.0.0.0:5000
+    volumes:
+      - ../data/registry:/var/lib/registry
     networks:
       - workflow_net
     restart: unless-stopped
