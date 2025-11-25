@@ -22,9 +22,8 @@ services:
    volumes:
      - ../data/jenkins:/var/jenkins_home
    environment:
-     - JENKINS_OPTS=--httpPort=8080
+     - JENKINS_OPTS=--httpPort=8080 -Djenkins.install.runSetupWizard=false
      - JENKINS_SLAVE_AGENT_PORT=50000
-     - JAVA_OPTS=-Djenkins.install.runSetupWizard=false 
    networks:
      - workflow_net
    restart: unless-stopped
