@@ -93,6 +93,17 @@ services:
       - workflow_net
     restart: unless-stopped
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox-exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox.yml:/etc/blackbox_exporter/config.yml
+    networks:
+      - workflow_net
+    restart: unless-stopped
+
 networks:
   workflow_net:
     driver: bridge
