@@ -17,15 +17,17 @@ services:
     restart: unless-stopped
 
   jenkins:
-    image: jenkins/jenkins:lts-jdk17
-    user: root
-    volumes:
-      - ../data/jenkins:/var/jenkins_home
-    environment:
-      - JENKINS_OPTS=--httpPort=8080
-    networks:
-      - workflow_net
-    restart: unless-stopped
+   image: jenkins/jenkins:lts-jdk17
+   user: root
+   volumes:
+     - ../data/jenkins:/var/jenkins_home
+   environment:
+     - JENKINS_OPTS=--httpPort=8080
+     - JENKINS_SLAVE_AGENT_PORT=50000
+     - JAVA_OPTS=-Djenkins.install.runSetupWizard=false 
+   networks:
+     - workflow_net
+   restart: unless-stopped
 
   gitea:
     image: gitea/gitea:1.23
