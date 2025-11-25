@@ -58,8 +58,12 @@ services:
     image: registry:2
     environment:
       - REGISTRY_HTTP_ADDR=0.0.0.0:5000
+      - REGISTRY_AUTH=htpasswd
+      - REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm"
+      - REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd
     volumes:
       - ../data/registry:/var/lib/registry
+      - ./registry/auth:/auth
     networks:
       - workflow_net
     restart: unless-stopped
